@@ -124,6 +124,7 @@ header{position:sticky;top:0;z-index:200;background:var(--black);border-bottom:1
 .pbadge{position:absolute;top:9px;left:9px;background:var(--gold);color:var(--black);font-size:.58rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px;border-radius:1px}
 .pbadge.sale{background:var(--red);color:#fff}
 .pbadge.oos{background:var(--gx);color:#fff}
+.pbadge.svc{background:#3a6b9e;color:#fff}
 .pcard-body{padding:15px;flex:1;display:flex;flex-direction:column}
 .pcat{font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:5px}
 .pname{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:400;line-height:1.3;margin-bottom:7px;flex:1}
@@ -456,7 +457,7 @@ footer p{font-size:.68rem;color:rgba(255,255,255,.28);letter-spacing:.1em}
   </div>
   <nav class="h-nav">
     <button class="act" onclick="showPage('shop',this)">Shop</button>
-    <button onclick="showPage('services',this)">Services</button>
+    <button onclick="showPage('services',this);renderServicesPage()">Services</button>
   </nav>
   <div class="h-right">
     <button class="btn-ghost" onclick="openAdminLogin()">Admin</button>
@@ -505,7 +506,7 @@ footer p{font-size:.68rem;color:rgba(255,255,255,.28);letter-spacing:.1em}
         <button class="cat-btn" onclick="filterCat('PPE',this)">PPE <span class="cat-cnt" id="cnt-PPE">0</span></button>
         <button class="cat-btn" onclick="filterCat('Tools',this)">Tools <span class="cat-cnt" id="cnt-Tools">0</span></button>
         <button class="cat-btn" onclick="filterCat('Devices',this)">Devices &amp; Gadgets <span class="cat-cnt" id="cnt-Devices">0</span></button>
-        <button class="cat-btn" onclick="filterCat('Services',this)">Services <span class="cat-cnt" id="cnt-Services">0</span></button>
+        <button class="cat-btn" onclick="showPage('shop',document.querySelector('.h-nav button'));filterCat('Services',this)">Services <span class="cat-cnt" id="cnt-Services">0</span></button>
       </div>
       <div class="sb-section" id="sb-banking" style="display:none">
         <h4>Payment Details</h4>
@@ -776,6 +777,7 @@ function saveItem() {
   renderGrid();
   renderFeatured();
   renderServicesPage();
+  updateCounts();
 }
 function editItem(id) {
   var p = items.find(function(x){ return x.id === id; });
@@ -871,7 +873,7 @@ function filterCat(cat, btn) {
 }
 function renderGrid() {
   var q    = document.getElementById('search').value.toLowerCase().trim();
-  var pool = currentCat === 'Services' ? items.filter(function(x){ return x.type === 'service'; }) : items.filter(function(x){ return x.type !== 'service'; });
+  var pool = currentCat === 'Services' ? items.filter(function(x){ return x.type === 'service'; }) : (currentCat === 'all' ? items.filter(function(x){ return x.type !== 'service'; }) : items.filter(function(x){ return x.type !== 'service'; }));
   var filtered = pool.filter(function(p) {
     var matchCat    = currentCat === 'all' || p.cat === currentCat;
     var searchable  = (p.name + ' ' + (p.desc||'') + ' ' + p.cat + ' ' + (p.source||'')).toLowerCase();
@@ -905,7 +907,8 @@ function buildCard(p) {
   var badge = p.badge
     ? '<div class="pbadge' + (isSale ? ' sale' : '') + '">' + p.badge + '</div>'
     : (!p.inStock ? '<div class="pbadge oos">OUT OF STOCK</div>'
-      : (isSale ? '<div class="pbadge sale">SALE</div>' : ''));
+      : (p.type === 'service' ? '<div class="pbadge" style="background:#3a6b9e;color:#fff">SERVICE</div>'
+      : (isSale ? '<div class="pbadge sale">SALE</div>' : '')));
   var priceHtml = !p.price
     ? '<span class="pprice qr">QUOTE ON REQUEST</span>'
     : isSale
@@ -913,7 +916,9 @@ function buildCard(p) {
       : '<span class="pprice">SZL ' + dp.toFixed(2) + '</span>';
   var btnHtml = !p.inStock
     ? '<button class="padd" disabled style="opacity:.4;cursor:not-allowed">Unavailable</button>'
-    : '<button class="padd" onclick="event.stopPropagation();addToCart(' + "'" + p.id + "'" + ')">Add to Cart</button>';
+    : (p.type === 'service' && !p.price)
+      ? '<button class="padd enquire" onclick="event.stopPropagation();enquireWA(' + "'" + p.id + "'" + ')">Enquire via WhatsApp</button>'
+      : '<button class="padd" onclick="event.stopPropagation();addToCart(' + "'" + p.id + "'" + ')">Add to Cart</button>';
   return '<div class="pcard" onclick="addToCart(' + "'" + p.id + "'" + ')">'
     + '<div class="pcard-img">' + iconHtml + badge + '</div>'
     + '<div class="pcard-body">'
